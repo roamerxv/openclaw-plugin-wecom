@@ -6,12 +6,12 @@
     "main": "index.js",
     "files": [
         "index.js",
+        "wecom",
         "crypto.js",
         "dynamic-agent.js",
         "image-processor.js",
         "logger.js",
         "README.md",
-        "README_ZH.md",
         "LICENSE",
         "CONTRIBUTING.md",
         "stream-manager.js",

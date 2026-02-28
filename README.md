@@ -1,44 +1,69 @@
-# OpenClaw WeCom (Enterprise WeChat) AI Bot Plugin
+# OpenClaw 企业微信 (WeCom) AI 机器人插件
 
-[English](https://github.com/sunnoy/openclaw-plugin-wecom/blob/main/README.md) | [简体中文](https://github.com/sunnoy/openclaw-plugin-wecom/blob/main/README_ZH.md)
+`openclaw-plugin-wecom` 是一个专为 [OpenClaw](https://github.com/openclaw/openclaw) 框架开发的企业微信（WeCom）集成插件。它允许你将强大的 AI 能力无缝接入企业微信，支持 AI 机器人模式和自建应用模式，并具备多层消息投递回退机制。
 
-`openclaw-plugin-wecom` is an Enterprise WeChat (WeCom) integration plugin developed for the [OpenClaw](https://github.com/openclaw/openclaw) framework. It enables seamless AI capabilities in Enterprise WeChat with advanced features.
+## 核心特性
 
-## Key Features
+### 消息模式支持
+- **AI 机器人模式 (Bot Mode)**: 基于企业微信最新的 AI 机器人流式分片机制，实现流畅的打字机式回复体验。支持 JSON 格式的回调消息。
+- **自建应用模式 (Agent Mode)**: 支持企业微信自建应用，可处理 XML 格式的回调消息，支持收发消息、上传下载媒体文件。
+- **Webhook Bot 模式**: 支持通过 Webhook 发送消息到群聊，适用于群通知场景。
 
-- **Streaming Output**: Built on WeCom's latest AI bot streaming mechanism for smooth typewriter-style responses.
-- **Dynamic Agent Management**: Automatically creates isolated agents per direct message user or group chat, with independent workspaces and conversation contexts.
-- **Deep Group Chat Integration**: Supports group message parsing with @mention triggering.
-- **Rich Message Types**: Handles text, image, voice, mixed (text+image), file, location, and link messages.
-- **Inbound Image Decryption**: Automatically decrypts WeCom-encrypted images using AES-256-CBC for AI vision processing.
-- **Outbound Image Support**: Automatic base64 encoding and sending of local images (screenshots, generated images) via `msg_item` API.
-- **Message Debounce**: Rapid consecutive messages from the same user are merged into a single AI request.
-- **Admin Users**: Configurable admin list that bypasses command allowlist and dynamic agent routing.
-- **Command Allowlist**: Built-in commands (e.g., `/new`, `/status`) with configurable allowlist to restrict sensitive operations.
-- **Security & Authentication**: Full support for WeCom message encryption/decryption, URL verification, and sender validation.
-- **High-Performance Async Processing**: Asynchronous message architecture ensures responsive gateway even during long AI inference.
+### 智能消息投递
+- **四层投递回退机制**: 确保消息可靠送达
+  1. **流式通道**: 优先通过活跃流式通道发送
+  2. **Response URL 回退**: 流式通道关闭后，使用企业微信 response_url 发送
+  3. **Webhook Bot 回退**: 支持通过 Webhook 发送到指定群聊
+  4. **Agent API 回退**: 通过自建应用 API 主动推送消息
+- **消息防抖合并**: 同一用户在短时间内（2 秒内）连续发送的多条消息自动合并为一次 AI 请求。
+- **内存自动清理**: 定期清理过期的流元数据和响应 URL，防止内存泄漏。
 
-## Prerequisites
+### 动态 Agent 与隔离
+- **动态 Agent 管理**: 默认按"每个私聊用户 / 每个群聊"自动创建独立 Agent。每个 Agent 拥有独立的工作区与对话上下文，实现更强的数据隔离。
+- **群聊深度集成**: 支持群聊消息解析，可通过 @提及（At-mention）精准触发机器人响应。
+- **管理员用户**: 可配置管理员列表，绕过指令白名单和动态 Agent 路由限制。
+- **指令白名单**: 内置常用指令支持（如 `/new`、`/status`），并提供指令白名单配置功能。
 
-- [OpenClaw](https://github.com/openclaw/openclaw) installed (version 2026.1.30+)
-- Enterprise WeChat admin access to create intelligent robot applications
-- Server address accessible from Enterprise WeChat (HTTP/HTTPS)
+### 多媒体支持
+- **丰富消息类型**: 支持文本、图片、语音、图文混排、文件、位置、链接等消息类型。
+- **入站媒体处理**: 自动解密企业微信 AES-256-CBC 加密的图片，下载并保存语音、视频、文件等媒体供 AI 分析。
+- **出站图片发送**: 支持通过 `msg_item` API 发送 base64 编码图片，单张最大 2MB，每条消息最多 10 张。
+- **文件上传下载**: Agent 模式下支持上传临时媒体文件和下载用户发送的媒体文件。
 
-## Installation
+### 安全与扩展
+- **安全与认证**: 完整支持企业微信消息加解密、URL 验证及发送者身份校验。
+- **高性能异步处理**: 采用异步消息处理架构，确保即使在长耗时 AI 推理过程中，企业微信网关也能保持高响应性。
+- **模块化架构**: 清晰的代码组织结构，易于维护和扩展。
+
+## 前置要求
+
+- 已安装 [OpenClaw](https://github.com/openclaw/openclaw) (版本 2026.1.30+)
+- 企业微信管理后台权限，可创建智能机器人应用或自建应用
+- 可从企业微信访问的服务器地址（HTTP/HTTPS）
+
+## 安装
 
 ```bash
 openclaw plugins install @sunnoy/wecom
 ```
 
-This command will automatically:
-- Download the plugin from npm
-- Install to `~/.openclaw/extensions/`
-- Update your OpenClaw configuration
-- Register the plugin
+此命令会自动：
+- 从 npm 下载插件
+- 安装到 `~/.openclaw/extensions/` 目录
+- 更新 OpenClaw 配置
+- 注册插件
 
-## Configuration
+### 运行测试
 
-Add to your OpenClaw configuration file (`~/.openclaw/openclaw.json`):
+```bash
+npm test
+```
+
+运行单元测试（使用 Node.js 内置测试运行器）。
+
+## 配置
+
+在 OpenClaw 配置文件（`~/.openclaw/openclaw.json`）中添加：
 
 ```json
 {
@@ -52,53 +77,173 @@ Add to your OpenClaw configuration file (`~/.openclaw/openclaw.json`):
   "channels": {
     "wecom": {
       "enabled": true,
-      "token": "Your Token",
-      "encodingAesKey": "Your EncodingAESKey",
-      "adminUsers": ["admin-userid"],
+      "token": "你的 Bot Token",
+      "encodingAesKey": "你的 Bot EncodingAESKey",
+      "adminUsers": ["管理员userid"],
       "commands": {
         "enabled": true,
         "allowlist": ["/new", "/status", "/help", "/compact"]
+      },
+      "agent": {
+        "corpId": "企业 CorpID",
+        "corpSecret": "应用 Secret",
+        "agentId": 1000002,
+        "token": "回调 Token (Agent 模式)",
+        "encodingAesKey": "回调 EncodingAESKey (Agent 模式)"
+      },
+      "webhooks": {
+        "ops-group": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
+        "dev-group": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=yyy"
       }
     }
   }
 }
 ```
 
-### Configuration Options
+### 配置说明
 
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `plugins.entries.wecom.enabled` | boolean | Yes | Enable the plugin |
-| `channels.wecom.token` | string | Yes | WeCom bot Token |
-| `channels.wecom.encodingAesKey` | string | Yes | WeCom message encryption key (43 chars) |
-| `channels.wecom.adminUsers` | array | No | Admin user IDs (bypass command allowlist and dynamic routing) |
-| `channels.wecom.commands.allowlist` | array | No | Command allowlist |
+#### 基础配置
 
-## Enterprise WeChat Configuration
+| 配置项 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `plugins.entries.wecom.enabled` | boolean | 是 | 启用插件 |
+| `channels.wecom.token` | string | 是* | 企业微信机器人 Token (*Bot 模式必填) |
+| `channels.wecom.encodingAesKey` | string | 是* | 消息加密密钥（43 位）(*Bot 模式必填) |
+| `channels.wecom.adminUsers` | array | 否 | 管理员用户 ID 列表（绕过指令白名单和动态路由） |
+| `channels.wecom.commands.enabled` | boolean | 否 | 是否启用指令白名单过滤（默认 true） |
+| `channels.wecom.commands.allowlist` | array | 否 | 允许的指令白名单 |
 
-1. Log in to [Enterprise WeChat Admin Console](https://work.weixin.qq.com/)
-2. Navigate to "Application Management" > "Applications" > "Create Application" > Select "Intelligent Robot"
-3. Configure "Receive Messages":
+#### 动态 Agent 配置
+
+配置按人/按群隔离的 Agent 管理：
+
+| 配置项 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `channels.wecom.dynamicAgents.enabled` | boolean | 否 | 是否启用动态 Agent（默认 true） |
+| `channels.wecom.dm.createAgentOnFirstMessage` | boolean | 否 | 私聊时为每个用户创建独立 Agent（默认 true） |
+| `channels.wecom.groupChat.enabled` | boolean | 否 | 是否启用群聊处理（默认 true） |
+| `channels.wecom.groupChat.requireMention` | boolean | 否 | 群聊是否必须 @ 提及才响应（默认 true） |
+
+#### 工作区模板配置 (可选)
+
+配置工作区模板目录，为动态创建的 Agent 工作区预置初始化文件：
+
+| 配置项 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `channels.wecom.workspaceTemplate` | string | 否 | 模板目录路径，支持 AGENTS.md、BOOTSTRAP.md 等 bootstrap 文件 |
+
+当动态 Agent 首次创建时，会自动从模板目录复制 bootstrap 文件到对应的工作区。详细说明请参考[动态 Agent 路由](#动态-agent-路由)章节。
+
+#### Agent 模式配置 (可选)
+
+配置自建应用以实现更强大的消息收发能力：
+
+| 配置项 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `channels.wecom.agent.corpId` | string | 是 | 企业 CorpID |
+| `channels.wecom.agent.corpSecret` | string | 是 | 应用 Secret |
+| `channels.wecom.agent.agentId` | number | 是 | 应用 Agent ID |
+| `channels.wecom.agent.token` | string | 是 | 回调 Token (用于验证签名) |
+| `channels.wecom.agent.encodingAesKey` | string | 是 | 回调 EncodingAESKey (43 位) |
+
+#### Webhook 配置 (可选)
+
+配置 Webhook Bot 用于群通知：
+
+| 配置项 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `channels.wecom.webhooks` | object | 否 | Webhook URL 映射 (key: 名称, value: URL) |
+
+## 企业微信后台配置
+
+### 方式一：创建 AI 机器人 (Bot 模式)
+
+AI 机器人模式适用于简单的问答场景，支持流式输出。
+
+> 📖 **官方文档**：[企业微信 AI 机器人开发指南](https://developer.work.weixin.qq.com/document/path/101039)
+
+**创建步骤：**
+
+1. 登录[企业微信管理后台](https://work.weixin.qq.com/)
+2. 进入「应用管理」→「应用」→ 下拉找到「智能机器人」→ 点击「创建应用」
+3. **关键步骤**：在创建页面底部，选择 **「API 模式创建」**，而非「标准模式创建」
+   > ⚠️ **必须选择 API 模式**。标准模式下回调消息为 XML 格式，API 模式为 JSON 格式，本插件的 Bot 模式仅支持 JSON。
+4. 填写机器人名称、头像等基本信息，点击「创建」
+5. 创建完成后，进入机器人详情页：
+   - 复制 `Token`（用于验证消息签名）
+   - 复制 `EncodingAESKey`（43位字符，用于消息加解密）
+6. 点击「接收消息」区域的「设置」：
    - **URL**: `https://your-domain.com/webhooks/wecom`
-   - **Token**: Match `channels.wecom.token`
-   - **EncodingAESKey**: Match `channels.wecom.encodingAesKey`
-4. Save and enable message receiving
+   - **Token**: 填入上一步复制的 Token
+   - **EncodingAESKey**: 填入上一步复制的 EncodingAESKey
+7. 保存配置并启用消息接收
 
-## Supported Message Types
+### 方式二：创建自建应用 (Agent 模式)
 
-| Type | Direction | Description |
-|------|-----------|-------------|
-| Text | Inbound/Outbound | Plain text messages |
-| Image | Inbound/Outbound | Encrypted images (inbound are auto-decrypted); outbound via `msg_item` base64 |
-| Voice | Inbound | Auto-transcribed by WeCom, processed as text (DM only) |
-| Mixed | Inbound | Text + image combination messages |
-| File | Inbound | File attachments (downloaded and passed to AI for analysis) |
-| Location | Inbound | Location shares (converted to text description) |
-| Link | Inbound | Shared links (title, description, URL extracted as text) |
+自建应用模式提供更完整的消息收发能力，支持 XML 回调、主动推送、媒体文件处理。
 
-## Admin Users
+> 📖 **官方文档**：[企业微信自建应用开发指南](https://developer.work.weixin.qq.com/document/path/90226)、[接收消息服务器配置](https://developer.work.weixin.qq.com/document/path/90238)
 
-Admin users bypass the command allowlist and skip dynamic agent routing (routed to the main agent directly).
+**创建步骤：**
+
+1. 登录[企业微信管理后台](https://work.weixin.qq.com/)
+2. 进入「应用管理」→「应用」→ 点击「创建应用」
+3. 填写应用信息：
+   - 应用名称：如 "AI 助手"
+   - 应用头像：上传应用图标
+   - 可见成员：选择可使用该应用的成员
+4. 点击「创建应用」，记录以下信息：
+   - `AgentId`：应用 ID（数字）
+   - `Secret`：应用凭证（点击「查看」获取）
+5. 在「接收消息」区域点击「设置 API 接收」：
+   - **URL**: `https://your-domain.com/webhooks/app`
+   - **Token**: 点击「随机生成」获取
+   - **EncodingAESKey**: 点击「随机生成」获取（43位字符）
+   - 点击「保存」时，企业微信会发送验证请求到上述 URL 进行域名校验
+   > ⚠️ **注意**：保存前请确保服务已部署并可访问，否则校验会失败。如果遇到「回调 URL 校验失败」，请检查：
+   > - 服务器是否可以从公网访问
+   > - URL 路径是否正确（`/webhooks/app`）
+   > - Token 和 EncodingAESKey 是否已正确配置到插件
+   > - 防火墙是否放行了企业微信服务器 IP 段
+6. 获取企业 CorpID：
+   - 进入「我的企业」页面
+   - 复制页面底部的「企业ID」
+7. 配置应用可见范围（确保需要使用 AI 助手的成员在可见范围内）
+
+### 方式三：配置群机器人 (Webhook 模式)
+
+Webhook Bot 用于向群聊发送通知消息。
+
+> 📖 **官方文档**：[企业微信群机器人开发指南](https://developer.work.weixin.qq.com/document/path/99110)
+
+**创建步骤：**
+
+1. 在手机或电脑端打开目标群聊
+2. 点击群聊右上角「···」→「群机器人」→「添加机器人」
+3. 选择「新建机器人」，填写机器人名称
+4. 复制 Webhook 地址（格式：`https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx`）
+5. 将 Webhook 地址配置到 `openclaw.json` 的 `webhooks` 中
+
+**注意事项：**
+- Webhook Bot 仅支持发送消息，不支持接收消息
+- 每个群聊可添加多个机器人
+- Webhook 地址请妥善保管，避免泄露
+
+## 支持的消息类型
+
+| 类型 | 方向 | 说明 |
+|------|------|------|
+| 文本 (text) | 收/发 | 纯文本消息 |
+| 图片 (image) | 收/发 | 入站图片自动解密；出站通过 `msg_item` base64 发送 |
+| 语音 (voice) | 收 | 企业微信自动转文字后处理（仅限私聊） |
+| 图文混排 (mixed) | 收 | 文本 + 图片混合消息 |
+| 文件 (file) | 收 | 文件附件（下载后传给 AI 分析） |
+| 位置 (location) | 收 | 位置分享（转换为文本描述） |
+| 链接 (link) | 收 | 分享链接（提取标题、描述、URL 为文本） |
+
+## 管理员用户
+
+管理员用户可以绕过指令白名单限制，并跳过动态 Agent 路由（直接路由到主 Agent）。
 
 ```json
 {
@@ -110,24 +255,24 @@ Admin users bypass the command allowlist and skip dynamic agent routing (routed 
 }
 ```
 
-Admin user IDs are case-insensitive and matched against the WeCom `userid` field.
+管理员用户 ID 不区分大小写，匹配企业微信的 `userid` 字段。
 
-## Dynamic Agent Routing
+## 动态 Agent 路由
 
-The plugin implements per-user/per-group agent isolation:
+本插件实现"按人/按群隔离"的 Agent 管理：
 
-### How It Works
+### 工作原理
 
-1. When a WeCom message arrives, the plugin generates a deterministic `agentId`:
-   - **Direct Messages**: `wecom-dm-<userId>`
-   - **Group Chats**: `wecom-group-<chatId>`
-2. OpenClaw automatically creates/reuses the corresponding agent workspace
-3. Each user/group has independent conversation history and context
-4. **Admin users** skip dynamic routing and use the main agent directly
+1. 企业微信消息到达后，插件生成确定性的 `agentId`：
+   - **私聊**: `wecom-dm-<userId>`
+   - **群聊**: `wecom-group-<chatId>`
+2. OpenClaw 自动创建/复用对应的 Agent 工作区
+3. 每个用户/群聊拥有独立的对话历史和上下文
+4. **管理员用户**跳过动态路由，直接使用主 Agent
 
-### Advanced Configuration
+### 高级配置
 
-Configure under `channels.wecom`:
+配置在 `channels.wecom` 下：
 
 ```json
 {
@@ -148,16 +293,16 @@ Configure under `channels.wecom`:
 }
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `dynamicAgents.enabled` | boolean | `true` | Enable dynamic agents |
-| `dm.createAgentOnFirstMessage` | boolean | `true` | Use dynamic agents for DMs |
-| `groupChat.enabled` | boolean | `true` | Enable group chat processing |
-| `groupChat.requireMention` | boolean | `true` | Require @mention in groups |
+| 配置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `dynamicAgents.enabled` | boolean | `true` | 是否启用动态 Agent |
+| `dm.createAgentOnFirstMessage` | boolean | `true` | 私聊使用动态 Agent |
+| `groupChat.enabled` | boolean | `true` | 启用群聊处理 |
+| `groupChat.requireMention` | boolean | `true` | 群聊必须 @ 提及才响应 |
 
-### Disable Dynamic Agents
+### 禁用动态 Agent
 
-To route all messages to the default agent:
+如果需要所有消息进入默认 Agent：
 
 ```json
 {
@@ -169,9 +314,59 @@ To route all messages to the default agent:
 }
 ```
 
-## Command Allowlist
+### 工作区模板
 
-Prevent regular users from executing sensitive Gateway management commands through WeCom messages.
+可以为动态创建的 Agent 工作区预置初始化文件。当新 Agent 首次创建时，会自动从模板目录复制 bootstrap 文件。
+
+```json
+{
+  "channels": {
+    "wecom": {
+      "workspaceTemplate": "/path/to/template-dir"
+    }
+  }
+}
+```
+
+**支持的模板文件：**
+- `AGENTS.md` - Agent 列表配置
+- `BOOTSTRAP.md` - 初始化引导文档
+- `CLAUDE.md` - Claude Code 指令集
+- 其他自定义文件
+
+模板目录中的文件会复制到动态 Agent 的工作区（`~/.openclaw/workspace-<agentId>/`），仅当目标文件不存在时才会复制。
+
+## 支持的目标格式
+
+插件支持多种目标格式，用于消息路由和 Webhook 发送：
+
+| 格式 | 示例 | 说明 |
+|------|------|------|
+| `webhook:<name>` | `webhook:ops-group` | 发送到配置的 Webhook 群 |
+| `wecom:<userId>` | `wecom:zhangsan` | 企业微信用户 ID |
+| `party:<id>` | `party:2` | 部门 ID（数字） |
+| `tag:<name>` | `tag:Developers` | 标签名称 |
+| `group:<chatId>` | `group:wr123456` | 群聊 ID |
+| `chatId` | `wr123456` | 以 `wr` 或 `wc` 开头的群聊 ID |
+
+### 使用示例
+
+通过 OpenClaw 向企业微信发送消息时，可以使用上述格式指定目标：
+
+```bash
+# 发送给指定用户
+openclaw send "wecom:zhangsan" "Hello!"
+
+# 发送到 Webhook 群
+openclaw send "webhook:dev-group" "部署成功！"
+
+# 发送给部门
+openclaw send "party:2" "全体员工通知"
+```
+
+## 指令白名单
+
+为防止普通用户通过企业微信消息执行敏感的 Gateway 管理指令，本插件支持**指令白名单**机制。
 
 ```json
 {
@@ -186,78 +381,166 @@ Prevent regular users from executing sensitive Gateway management commands throu
 }
 ```
 
-### Recommended Allowlist Commands
+### 推荐白名单指令
 
-| Command | Description | Safety Level |
-|---------|-------------|--------------|
-| `/new` | Reset conversation, start new session | User-level |
-| `/compact` | Compress current session context | User-level |
-| `/help` | Show help information | User-level |
-| `/status` | Show Agent status | User-level |
+| 指令 | 说明 | 安全级别 |
+|------|------|----------|
+| `/new` | 重置当前对话，开启全新会话 | 用户级 |
+| `/compact` | 压缩当前会话上下文 | 用户级 |
+| `/help` | 查看帮助信息 | 用户级 |
+| `/status` | 查看当前 Agent 状态 | 用户级 |
 
-> **Security Note**: Do not add `/gateway`, `/plugins`, or other management commands to the allowlist to prevent regular users from gaining Gateway instance admin privileges. Admin users configured in `adminUsers` bypass this restriction.
+> **安全提示**：不要将 `/gateway`、`/plugins` 等管理指令添加到白名单，避免普通用户获得 Gateway 实例的管理权限。配置在 `adminUsers` 中的管理员不受此限制。
 
-## Message Debounce
+## 消息防抖合并
 
-When a user sends multiple messages in rapid succession (within 2 seconds), the plugin automatically merges them into a single AI request. This prevents multiple concurrent LLM calls for the same user and provides a more coherent response.
+当用户在短时间内（2 秒内）连续发送多条消息时，插件会自动将它们合并为一次 AI 请求。这样可以避免同一用户触发多个并发的 LLM 调用，提供更连贯的回复。
 
-- The first message's stream receives the AI response
-- Subsequent merged messages show a notice that they have been combined
-- Commands (messages starting with `/`) bypass debounce and are processed immediately
+- 第一条消息的流式通道接收 AI 回复
+- 后续被合并的消息会显示已合并的提示
+- 指令消息（以 `/` 开头）不参与防抖，会立即处理
 
-## FAQ
+## 常见问题 (FAQ)
 
-### Q: How does inbound image handling work?
+### Q: 回调报错 `Unexpected token '<', "..." is not valid JSON` 怎么办？
 
-**A:** WeCom encrypts images sent by users with AES-256-CBC. The plugin automatically:
-1. Downloads the encrypted image from WeCom's URL
-2. Decrypts it using the configured `encodingAesKey`
-3. Saves it locally and passes it to the AI for vision analysis
+**A:** 这是企业微信机器人**创建模式**选错导致的。企业微信提供两种机器人创建方式：
 
-Mixed messages (text + images) are fully supported — text and images are extracted and sent together.
+- **标准模式**：回调消息为 **XML 格式**，本插件不支持
+- **API 模式**：回调消息为 **JSON 格式**，本插件所需
 
-### Q: How does outbound image sending work?
+**解决方法**：删除当前机器人，重新创建时在页面底部选择 **"API 模式创建"**。
 
-**A:** The plugin automatically handles images generated by OpenClaw (such as browser screenshots):
+### Q: 入站图片是怎么处理的？
 
-- **Local images** (from `~/.openclaw/media/`) are automatically encoded to base64 and sent via WeCom's `msg_item` API
-- **Image constraints**: Max 2MB per image, supports JPG and PNG formats, up to 10 images per message
-- **No configuration needed**: Works out of the box with tools like browser screenshot
-- Images appear when the AI completes its response (streaming doesn't support incremental image sending)
+**A:** 企业微信使用 AES-256-CBC 加密用户发送的图片。插件会自动：
+1. 从企业微信的 URL 下载加密图片
+2. 使用配置的 `encodingAesKey` 解密
+3. 保存到本地并传给 AI 进行视觉分析
 
-If an image fails to process (size limit, invalid format), the text response will still be delivered and an error will be logged.
+图文混排消息也完全支持——文本和图片会一起提取并发送给 AI。
 
-### Q: Does the bot support voice messages?
+### Q: 出站图片发送是如何工作的？
 
-**A:** Yes! Voice messages in direct chats are automatically transcribed by WeCom and processed as text. No additional configuration needed.
+**A:** 插件会自动处理 OpenClaw 生成的图片（如浏览器截图）：
 
-### Q: Does the bot support file messages?
+- **本地图片**（来自 `~/.openclaw/media/`）会自动进行 base64 编码，通过企业微信 `msg_item` API 发送
+- **图片限制**：单张图片最大 2MB，支持 JPG 和 PNG 格式，每条消息最多 10 张图片
+- **无需配置**：开箱即用，配合浏览器截图等工具自动生效
+- 图片会在 AI 完成回复后显示（流式输出不支持增量发送图片）
 
-**A:** Yes. Files sent by users are downloaded and passed to the AI as attachments. The AI can analyze file contents (e.g., reading a PDF or parsing a code file). MIME types are auto-detected from the file extension.
+如果图片处理失败（超出大小限制、格式不支持等），文本回复仍会正常发送，错误信息会记录在日志中。
 
-### Q: How to configure auth token for public-facing OpenClaw with WeCom callbacks?
+### Q: 机器人支持语音消息吗？
 
-**A:** WeCom bot **does not need** OpenClaw's Gateway Auth Token.
+**A:** 支持！私聊中的语音消息会被企业微信自动转录为文字并作为文本处理，无需额外配置。
 
-- **Gateway Auth Token** (`gateway.auth.token`) is used for:
-  - WebUI access authentication
-  - WebSocket connection authentication
-  - CLI remote connection authentication
+### Q: 机器人支持文件消息吗？
 
-- **WeCom Webhook** (`/webhooks/wecom`) authentication:
-  - Uses WeCom's own signature verification (Token + EncodingAESKey)
-  - Does not require Gateway Auth Token
-  - OpenClaw plugin system automatically handles webhook routing
+**A:** 支持。用户发送的文件会被下载并作为附件传给 AI。AI 可以分析文件内容（如读取 PDF 或解析代码文件）。MIME 类型根据文件扩展名自动检测。
 
-**Deployment suggestions:**
-1. If using a reverse proxy (e.g., Nginx), configure authentication exemption for `/webhooks/wecom` path
-2. Or expose the webhook endpoint on a separate port without Gateway Auth
+### Q: 如何配置自建应用 (Agent) 模式？
 
-### Q: How to fix EncodingAESKey length validation failure?
+**A:** Agent 模式提供更强大的消息收发能力，包括主动推送消息和接收 XML 格式回调。
 
-**A:** Common causes and solutions:
+**配置步骤：**
 
-1. **Check configuration key name**: Ensure correct key name `encodingAesKey` (case-sensitive)
+1. 在企业微信管理后台创建"自建应用"
+2. 获取应用凭证：
+   - `corpId`: 企业 ID（在"我的企业"页面）
+   - `agentId`: 应用 ID
+   - `corpSecret`: 应用 Secret
+3. 设置接收消息：
+   - 获取 `token` 和 `encodingAesKey`（随机生成）
+   - 回调 URL: `https://your-domain.com/webhooks/app`
+
+4. 在 `openclaw.json` 中添加 Agent 配置：
+   ```json
+   {
+     "channels": {
+       "wecom": {
+         "agent": {
+           "corpId": "wwxxxxxxxxxxxxxxxx",
+           "corpSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+           "agentId": 1000002,
+           "token": "your_callback_token",
+           "encodingAesKey": "your_43_char_encoding_aes_key"
+         }
+       }
+     }
+   }
+   ```
+
+**Agent 模式与 Bot 模式的区别：**
+
+| 特性 | Bot 模式 | Agent 模式 |
+|------|----------|------------|
+| 创建方式 | 智能机器人 | 自建应用 |
+| 回调格式 | JSON | XML |
+| 主动推送 | 不支持 | 支持 |
+| 媒体下载 | 不支持 | 支持 |
+| 文件消息 | 不支持 | 支持 |
+
+### Q: 如何使用 Webhook Bot 发送群通知？
+
+**A:** Webhook Bot 适用于向群聊发送通知消息。
+
+**配置步骤：**
+
+1. 在企业微信群聊中添加"群机器人"
+2. 复制 Webhook URL（包含 key 参数）
+3. 在配置中添加 webhook 映射：
+   ```json
+   {
+     "channels": {
+       "wecom": {
+         "webhooks": {
+           "ops-group": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
+           "dev-group": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=yyy"
+         }
+       }
+     }
+   }
+   ```
+
+4. 使用 `webhook:` 前缀作为目标：
+   - 文本：`webhook:ops-group`
+   - 支持 Markdown、图片、文件等多种消息类型
+
+### Q: 四层消息投递回退是如何工作的？
+
+**A:** 插件采用四层回退机制确保消息可靠送达：
+
+| 层级 | 条件 | 说明 |
+|------|------|------|
+| **Layer 1** | 活跃流式通道 | 正常对话时，消息通过流式通道实时推送 |
+| **Layer 2** | response_url | 流式通道关闭后 1 小时内，可通过 response_url 发送 |
+| **Layer 3a** | Webhook Bot | 目标以 `webhook:` 开头时，使用 Webhook 发送 |
+| **Layer 3b** | Agent API | 配置了 Agent 时，通过自建应用 API 主动推送 |
+
+当上一层级不可用时，自动回退到下一层级。这种设计确保了即使在流式通道关闭的情况下，AI 生成的异步消息（如定时任务、子 Agent 输出）仍能送达。
+
+### Q: OpenClaw 开放公网需要 auth token，企业微信回调如何配置？
+
+- **Gateway Auth Token** (`gateway.auth.token`) 主要用于：
+  - WebUI 访问认证
+  - WebSocket 连接认证
+  - CLI 远程连接认证
+
+- **企业微信 Webhook** (`/webhooks/wecom`) 的认证机制：
+  - 使用企业微信自己的签名验证（Token + EncodingAESKey）
+  - 不需要 Gateway Auth Token
+  - OpenClaw 插件系统会自动处理 webhook 路由
+
+**部署建议：**
+1. 如果使用反向代理（如 Nginx），可以为 `/webhooks/wecom` 路径配置豁免认证
+2. 或者将 webhook 端点暴露在独立端口，不经过 Gateway Auth
+
+### Q: EncodingAESKey 长度验证失败怎么办？
+
+**A:** 常见原因和解决方法：
+
+1. **检查配置键名**：确保使用正确的键名 `encodingAesKey`（注意大小写）
    ```json
    {
      "channels": {
@@ -268,36 +551,60 @@ If an image fails to process (size limit, invalid format), the text response wil
    }
    ```
 
-2. **Check key length**: EncodingAESKey must be exactly 43 characters
+2. **检查密钥长度**：EncodingAESKey 必须是 43 位字符
    ```bash
-   # Check length
-   echo -n "your-key" | wc -c
+   # 检查长度
+   echo -n "你的密钥" | wc -c
    ```
 
-3. **Check for extra spaces/newlines**: Ensure no leading/trailing whitespace in the key string
+3. **检查是否有多余空格/换行**：确保密钥字符串前后没有空格或换行符
 
-## Project Structure
+## 项目结构
 
 ```
 openclaw-plugin-wecom/
-├── index.js              # Plugin entry point
-├── webhook.js            # WeCom HTTP communication handler
-├── dynamic-agent.js      # Dynamic agent routing logic
-├── stream-manager.js     # Streaming response manager
-├── image-processor.js    # Image encoding/validation for msg_item
-├── crypto.js             # WeCom encryption algorithms (message + media)
-├── logger.js             # Logging module
-├── utils.js              # Utility functions (TTL cache, deduplication)
-├── package.json          # npm package config
-└── openclaw.plugin.json  # OpenClaw plugin manifest
+├── index.js                 # 插件入口
+├── package.json             # npm 包配置
+├── openclaw.plugin.json     # OpenClaw 插件清单
+├── crypto.js                # 企业微信加密算法（消息 + 媒体）
+├── logger.js                # 日志模块
+├── utils.js                 # 工具函数（TTL 缓存、消息去重）
+├── stream-manager.js        # 流式回复管理
+├── image-processor.js       # 图片编码/校验（msg_item）
+├── webhook.js               # 企业微信 Bot 模式 HTTP 通信处理
+├── dynamic-agent.js         # 动态 Agent 分配逻辑
+├── wecom/                   # 核心模块目录
+│   ├── channel-plugin.js    # 主频道插件逻辑
+│   ├── http-handler.js      # HTTP 请求处理器
+│   ├── agent-api.js         # Agent API 客户端（AccessToken 缓存、消息发送）
+│   ├── agent-inbound.js     # Agent 模式入站处理器（XML 回调）
+│   ├── webhook-bot.js       # Webhook Bot 客户端
+│   ├── inbound-processor.js # 入站消息处理器
+│   ├── xml-parser.js        # XML 解析器（Agent 模式）
+│   ├── target.js            # 目标解析器（支持多种目标格式）
+│   ├── commands.js          # 命令处理
+│   ├── constants.js         # 常量定义
+│   ├── state.js             # 状态管理
+│   ├── stream-utils.js      # 流式处理工具
+│   ├── response-url.js      # response_url 处理
+│   ├── allow-from.js        # 权限控制
+│   ├── media.js             # 媒体文件处理
+│   ├── webhook-targets.js   # Webhook 目标管理
+│   └── workspace-template.js # 工作区模板
+├── tests/                   # 测试目录
+│   ├── target.test.js       # 目标解析器测试
+│   └── xml-parser.test.js   # XML 解析器测试
+├── README.md                # 本文档
+├── CONTRIBUTING.md          # 贡献指南
+└── LICENSE                  # 开源协议
 ```
 
-## Contributing
+## 贡献规范
 
-We welcome contributions! Please submit Issues or Pull Requests for bugs or feature suggestions.
+我们非常欢迎开发者参与贡献！如果你发现了 Bug 或有更好的功能建议，请提交 Issue 或 Pull Request。
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+详见 [CONTRIBUTING.md](./CONTRIBUTING.md)
 
-## License
+## 开源协议
 
-This project is licensed under the [ISC License](./LICENSE).
+本项目采用 [ISC License](./LICENSE) 协议。
